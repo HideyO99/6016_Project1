@@ -1,26 +1,47 @@
-#define WIN32_LEAN_AND_MEAN
-#include <Windows.h>
-#include <WinSock2.h>
-#include <WS2tcpip.h>
-#include <stdlib.h>
-#include <stdio.h>
-
-#pragma comment(lib, "Ws2_32.lib")
+#include "TCP_Client.h"
 
 int main(int argc, char** argv)
 {
-	WSADATA wsadata;
+	TCP_Client Client;
 	int result = 0;
-	result = WSAStartup(MAKEWORD(2, 2), &wsadata);
-	if (result != 0)
+
+	//initialize winsock
+	result = Client.WinsockInit();
+	if (result != 0);
 	{
-		printf("error WSAStartup %#x", result);
-		return 1;
+		return result;
 	}
 
-	struct addrinfo* info = nullptr;
-	struct addrinfo hints;
-	ZeroMemory(&hints, sizeof(hints));
+	//socket creation
+	result = Client.SocketCreate();
+	if (result != 0);
+	{
+		return result;
+	}
 
+	//connect
+	result = Client.MakeConnect();
+	if (result != 0);
+	{
+		return result;
+	}
+
+	//write
+
+
+	//read
+
+
+	//close
+	result = Client.CloseConnection();
+	if (result != 0);
+	{
+		return result;
+	}
+
+	//shutdown winsock
+	Client.ShutdownWinsock();
+
+	
 	return 0;
 }
