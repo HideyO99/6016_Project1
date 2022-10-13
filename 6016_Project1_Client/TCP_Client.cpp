@@ -6,8 +6,8 @@ TCP_Client::TCP_Client()
 	info = nullptr;
 	ptr = nullptr;
 	ZeroMemory(&hints, sizeof(hints));
-	ConnectSocket = NULL;
-	ClientSocket = NULL;
+	ConnectSocket = INVALID_SOCKET;
+	ClientSocket = INVALID_SOCKET;
 }
 
 TCP_Client::~TCP_Client()

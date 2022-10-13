@@ -8,6 +8,7 @@
 
 #pragma comment(lib, "Ws2_32.lib")
 #define PORT "1112"
+#define DEBUG_print true
 
 class TCP_Server
 {
@@ -15,18 +16,23 @@ public:
 	TCP_Server();
 	~TCP_Server();
 
-	int WinsockInit();
-	int SocketCreate();
-	int BindSocket();
-	int ListenConnection();
-	int AcceptConnection();
+	int Initialize();
+	int ReadFromClient();
+	int SendToClient();
 	void CloseSocket();
-	void ShutdownWinsock();
 
 	WSADATA wsaData;
 	struct addrinfo* info;
 	struct addrinfo hints;
 	SOCKET ListenSocket;
 	SOCKET ClientSocket;
+
+
+private:
+	int WinsockInit();
+	int SocketCreate();
+	int BindSocket();
+	int ListenConnection();
+	int AcceptConnection();
 };
 
