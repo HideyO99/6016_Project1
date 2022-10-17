@@ -1,4 +1,10 @@
 #include "TCP_Server.h"
+#include "ProtocolChat.h"
+#include "Buffer.h"
+
+room room1(Network);
+room room2(Physic);
+room room3(Deploy);
 
 TCP_Server::TCP_Server()
 {
@@ -14,12 +20,12 @@ TCP_Server::~TCP_Server()
 {
 }
 
-int TCP_Server::Initialize()
+int TCP_Server::Initialize(PCSTR port)
 {
 	int result = 0;
 
 	//initialize winsock
-	result = WinsockInit();
+	result = WinsockInit(port);
 	if (result != 0)
 	{
 		return result;
@@ -55,7 +61,39 @@ int TCP_Server::Initialize()
 	return result;
 }
 
-int TCP_Server::WinsockInit()
+void TCP_Server::JoinRoom(uint16_t roomID, std::string user)
+{
+	switch (roomID)
+	{
+	case Network:
+		room1.join(user);
+		break;
+	case Physic:
+		room2.join(user);
+	case Deploy:
+		room3.join(user);
+	default:
+		break;
+	}
+}
+
+void TCP_Server::LeaveRoom(uint16_t roomID, std::string user)
+{
+	switch (roomID)
+	{
+	case Network:
+		room1.leave(user);
+		break;
+	case Physic:
+		room2.leave(user);
+	case Deploy:
+		room3.leave(user);
+	default:
+		break;
+	}
+}
+
+int TCP_Server::WinsockInit(PCSTR port)
 {
 	int result = 0;
 
@@ -85,7 +123,7 @@ int TCP_Server::WinsockInit()
 	printf("Getaddrinfo\t");
 #endif
 
-	result = getaddrinfo(NULL, PORT, &hints, &info);
+	result = getaddrinfo(NULL, port, &hints, &info);
 	if (result != 0)
 	{
 		printf("- error getaddrinfo %#x\n", result);
@@ -200,15 +238,69 @@ int TCP_Server::AcceptConnection()
 int TCP_Server::ReadFromClient()
 {
 	int result = 0;
+	ProtocolChat frame;
+	const int rcvBuffLen = 128;
+	char rcvBuff[rcvBuffLen];
+	Buffer buff(8);
 
+	int recvResult = recv(ClientSocket, rcvBuff, rcvBuffLen, 0);
+	buff.m_buffer.push_back((int8_t)rcvBuff[0]);
+	uint16_t cmd = buff.ReadShort16BE(4);
+	uint16_t opcode = buff.ReadShort16BE(6);
+	std::string s = buff.ReadString(12);
 
+	if (recvResult == (int)buff.ReadInt32BE(0))
+	{
+		switch (cmd)
+		{
+		case 0:
+			SendToClient("Hello " + s, 0);
+			break;
+		case 1:
+			JoinRoom(opcode, s);
+			break;
+		case 2:
+			LeaveRoom(opcode, s);
+			break;
+		case 4:
+			SendToClient(s, opcode);
+			break;
+		default:
+			break;
+		}
+	}
 	return result;
 }
 
-int TCP_Server::SendToClient()
+int TCP_Server::SendToClient(std::string s, uint16_t opcode)
 {
 	int result = 0;
+	Buffer buffer(8);
+	int packetLen = 0;
+	ProtocolChat frame;
 
+	frame.cmd = 0x3; // send to client
+	frame.opcode = opcode; //room
+	frame.content = s;
+	buffer.WriteInt32BE(frame.frameSize());
+	buffer.WriteShort16BE(frame.cmd);
+	buffer.WriteShort16BE(frame.opcode);
+	buffer.WriteInt32BE(frame.contentSize());
+	buffer.WriteString(frame.content);
+
+	result = send(ClientSocket, (const char*)&(buffer.m_buffer[0]), frame.frameSize(), 0);
+	if (opcode == BoardCast)
+	{
+		frame.opcode = Network;
+		buffer.WriteShort16BE(frame.opcode);
+		result = send(ClientSocket, (const char*)&(buffer.m_buffer[0]), frame.frameSize(), 0);
+		frame.opcode = Physic;
+		buffer.WriteShort16BE(frame.opcode);
+		result = send(ClientSocket, (const char*)&(buffer.m_buffer[0]), frame.frameSize(), 0);
+		frame.opcode = Deploy;
+		buffer.WriteShort16BE(frame.opcode);
+		result = send(ClientSocket, (const char*)&(buffer.m_buffer[0]), frame.frameSize(), 0);
+	}
 
 	return result;
 }

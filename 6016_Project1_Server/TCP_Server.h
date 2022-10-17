@@ -5,10 +5,14 @@
 #include <WS2tcpip.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <string>
+#include "room.h"
+
 
 #pragma comment(lib, "Ws2_32.lib")
 #define PORT "1112"
 #define DEBUG_print true
+
 
 class TCP_Server
 {
@@ -16,9 +20,9 @@ public:
 	TCP_Server();
 	~TCP_Server();
 
-	int Initialize();
+	int Initialize(PCSTR port);
 	int ReadFromClient();
-	int SendToClient();
+	int SendToClient(std::string s, uint16_t opcode);
 	void CloseSocket();
 
 	WSADATA wsaData;
@@ -27,9 +31,12 @@ public:
 	SOCKET ListenSocket;
 	SOCKET ClientSocket;
 
+	void JoinRoom(uint16_t roomID, std::string user);
+	void LeaveRoom(uint16_t roomID, std::string user);
+
 
 private:
-	int WinsockInit();
+	int WinsockInit(PCSTR port);
 	int SocketCreate();
 	int BindSocket();
 	int ListenConnection();

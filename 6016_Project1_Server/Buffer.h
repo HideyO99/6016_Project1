@@ -34,7 +34,7 @@ public:
 
 
 
-private:
+//private:
 	std::vector<int8_t> m_buffer;
 	int m_WriteIndex;
 	int m_ReadIndex;

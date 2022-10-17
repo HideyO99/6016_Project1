@@ -1,4 +1,7 @@
 #include "TCP_Server.h"
+#include "room.h"
+
+
 
 int main(int argc, char** argv)
 {
@@ -6,7 +9,7 @@ int main(int argc, char** argv)
 	int result = 0;
 
 	//initialize winsock
-	result = Server.Initialize();
+	result = Server.Initialize(PORT);
 	if (result != 0)
 	{
 		return result;
@@ -21,7 +24,7 @@ int main(int argc, char** argv)
 	}
 
 	//write
-	result = Server.SendToClient();
+	//result = Server.SendToClient();
 	if (result != 0)
 	{
 		return result;
