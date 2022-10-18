@@ -17,18 +17,22 @@ int main(int argc, char** argv)
 	
 
 	//read
-	result = Server.ReadFromClient();
-	if (result != 0)
+	while (1)
 	{
-		return result;
+		result = Server.ReadFromClient();
+		if (result < 0)
+		{
+			return result;
+		}
 	}
+
 
 	//write
 	//result = Server.SendToClient();
-	if (result != 0)
-	{
-		return result;
-	}
+	//if (result != 0)
+	//{
+	//	return result;
+	//}
 
 	//close socket
 	Server.CloseSocket();

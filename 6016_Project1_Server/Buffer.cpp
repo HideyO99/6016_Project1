@@ -21,7 +21,7 @@ void Buffer::WriteInt32LE(int32_t value)
 
 void Buffer::WriteInt32LE(std::size_t index, int32_t value)
 {
-	m_buffer[index] = value >> 0;
+	m_buffer[index]		= value >> 0;
 	m_buffer[index + 1] = value >> 8;
 	m_buffer[index + 2] = value >> 16;
 	m_buffer[index + 3] = value >> 24;
@@ -37,7 +37,7 @@ void Buffer::WriteInt32BE(int32_t value)
 
 void Buffer::WriteInt32BE(std::size_t index, int32_t value)
 {
-	m_buffer[index] = value >> 24;
+	m_buffer[index]		= value >> 24;
 	m_buffer[index + 1] = value >> 16;
 	m_buffer[index + 2] = value >> 8;
 	m_buffer[index + 3] = value >> 0;

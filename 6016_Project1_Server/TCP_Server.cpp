@@ -258,9 +258,11 @@ int TCP_Server::ReadFromClient()
 			break;
 		case 1:
 			JoinRoom(opcode, s);
+			SendToClient(s + "has joined the room", BoardCast);
 			break;
 		case 2:
 			LeaveRoom(opcode, s);
+			SendToClient(s + "has left the room", BoardCast);
 			break;
 		case 4:
 			SendToClient(s, opcode);
@@ -289,7 +291,7 @@ int TCP_Server::SendToClient(std::string s, uint16_t opcode)
 	buffer.WriteString(frame.content);
 
 	result = send(ClientSocket, (const char*)&(buffer.m_buffer[0]), frame.frameSize(), 0);
-	if (opcode == BoardCast)
+	if (opcode == BoardCast) //boardcast send message to every room
 	{
 		frame.opcode = Network;
 		buffer.WriteShort16BE(frame.opcode);
