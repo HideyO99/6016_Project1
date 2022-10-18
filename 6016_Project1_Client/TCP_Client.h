@@ -7,14 +7,16 @@
 #include <stdio.h>
 
 #pragma comment(lib, "Ws2_32.lib")
-#define PORT "1112"
-#define SERVERIP "127.0.0.1"
+
 
 class TCP_Client
 {
 public:
 	TCP_Client();
 	~TCP_Client();
+
+	int initialize(PCSTR ip, PCSTR port);
+	void CloseSocket();
 
 	WSADATA wsaData;
 	struct addrinfo* info;
@@ -23,7 +25,8 @@ public:
 	SOCKET ConnectSocket;
 	SOCKET ClientSocket;
 
-	int WinsockInit();
+private:
+	int WinsockInit(PCSTR ip, PCSTR port);
 	int SocketCreate();
 	int MakeConnect();
 	int CloseConnection();

@@ -14,7 +14,41 @@ TCP_Client::~TCP_Client()
 {
 }
 
-int TCP_Client::WinsockInit()
+int TCP_Client::initialize(PCSTR ip, PCSTR port)
+{
+	int result = 0;
+
+	//initialize winsock
+	result = WinsockInit(ip,port);
+	if (result != 0)
+	{
+		return result;
+	}
+
+	//socket creation
+	result = SocketCreate();
+	if (result != 0)
+	{
+		return result;
+	}
+
+	//connect
+	result = MakeConnect();
+	if (result != 0)
+	{
+		return result;
+	}
+
+	return result;
+}
+
+void TCP_Client::CloseSocket()
+{
+	CloseConnection();
+	ShutdownWinsock();
+}
+
+int TCP_Client::WinsockInit(PCSTR ip, PCSTR port)
 {
 	int result = 0;
 
@@ -35,7 +69,7 @@ int TCP_Client::WinsockInit()
 	hints.ai_protocol = IPPROTO_TCP;
 
 	printf("Getaddrinfo\t");
-	result = getaddrinfo(SERVERIP, PORT, &hints, &info);
+	result = getaddrinfo(ip, port, &hints, &info);
 	if (result != 0)
 	{
 		printf("- error getaddrinfo %#x\n", result);
@@ -76,7 +110,7 @@ int TCP_Client::MakeConnect()
 	int result = 0;
 
 	printf("connecting\t");
-	result = connect(ConnectSocket, info->ai_addr, info->ai_addrlen);
+	result = connect(ConnectSocket, info->ai_addr, (int)info->ai_addrlen);
 	if (result == SOCKET_ERROR)
 	{
 		printf("- error connecting %#x\n", WSAGetLastError());

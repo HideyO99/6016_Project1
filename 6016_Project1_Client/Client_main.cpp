@@ -1,30 +1,21 @@
 #include "TCP_Client.h"
 
+#define PORT "1112"
+#define SERVERIP "127.0.0.1"
+
 int main(int argc, char** argv)
 {
 	TCP_Client Client;
 	int result = 0;
 
 	//initialize winsock
-	result = Client.WinsockInit();
-	if (result != 0);
+	result = Client.initialize(SERVERIP, PORT);
+	if (result != 0)
 	{
 		return result;
 	}
 
-	//socket creation
-	result = Client.SocketCreate();
-	if (result != 0);
-	{
-		return result;
-	}
 
-	//connect
-	result = Client.MakeConnect();
-	if (result != 0);
-	{
-		return result;
-	}
 
 	//write
 
@@ -32,15 +23,9 @@ int main(int argc, char** argv)
 	//read
 
 
-	//close
-	result = Client.CloseConnection();
-	if (result != 0);
-	{
-		return result;
-	}
 
 	//shutdown winsock
-	Client.ShutdownWinsock();
+	Client.CloseSocket();
 
 	
 	return 0;
