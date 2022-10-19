@@ -239,33 +239,38 @@ int TCP_Server::ReadFromClient()
 {
 	int result = 0;
 	ProtocolChat frame;
-	const int rcvBuffLen = 128;
+	const int rcvBuffLen = 512;
 	char rcvBuff[rcvBuffLen];
-	Buffer buff(8);
+	Buffer buff(512);
 
 	int recvResult = recv(ClientSocket, rcvBuff, rcvBuffLen, 0);
-	buff.m_buffer.push_back((int8_t)rcvBuff[0]);
+	//buff.m_buffer.push_back((int8_t)rcvBuff[0]);
+	buff.m_buffer.insert(buff.m_buffer.begin(), rcvBuff, rcvBuff + rcvBuffLen);
+	//buff.m_buffer.assign(rcvBuff,);
+	uint32_t buffLen = buff.ReadInt32BE(0);
+	buff.m_buffer.resize(buffLen+1);
 	uint16_t cmd = buff.ReadShort16BE(4);
 	uint16_t opcode = buff.ReadShort16BE(6);
-	std::string s = buff.ReadString(12);
+	uint32_t contentLen = buff.ReadInt32BE(8);
+	std::string s = buff.ReadString(12,contentLen);
 
 	if (recvResult == (int)buff.ReadInt32BE(0))
 	{
 		switch (cmd)
 		{
 		case 0:
-			SendToClient("Hello " + s, 0);
+			SendToClient(0,"Hello " + s);
 			break;
 		case 1:
 			JoinRoom(opcode, s);
-			SendToClient(s + "has joined the room", BoardCast);
+			SendToClient(BoardCast, s.append("has joined the room "));
 			break;
 		case 2:
 			LeaveRoom(opcode, s);
-			SendToClient(s + "has left the room", BoardCast);
+			SendToClient(BoardCast, s.append( "has left the room "));
 			break;
 		case 4:
-			SendToClient(s, opcode);
+			SendToClient(opcode, s);
 			break;
 		default:
 			break;
@@ -274,16 +279,17 @@ int TCP_Server::ReadFromClient()
 	return result;
 }
 
-int TCP_Server::SendToClient(std::string s, uint16_t opcode)
+int TCP_Server::SendToClient(uint16_t opcode, std::string s)
 {
 	int result = 0;
-	Buffer buffer(8);
+	//Buffer buffer(8);
 	int packetLen = 0;
 	ProtocolChat frame;
 
 	frame.cmd = 0x3; // send to client
 	frame.opcode = opcode; //room
 	frame.content = s;
+	Buffer buffer(frame.frameSize());
 	buffer.WriteInt32BE(frame.frameSize());
 	buffer.WriteShort16BE(frame.cmd);
 	buffer.WriteShort16BE(frame.opcode);

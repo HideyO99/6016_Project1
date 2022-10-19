@@ -5,6 +5,8 @@
 #include <WS2tcpip.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include "Buffer.h"
+#include "ProtocolChat.h"
 
 #pragma comment(lib, "Ws2_32.lib")
 
@@ -17,6 +19,8 @@ public:
 
 	int initialize(PCSTR ip, PCSTR port);
 	void CloseSocket();
+	int SendToServer(uint16_t cmd, uint16_t opcode, std::string s);
+	int ReceiveFromServer();
 
 	WSADATA wsaData;
 	struct addrinfo* info;
@@ -24,6 +28,8 @@ public:
 	struct addrinfo hints;
 	SOCKET ConnectSocket;
 	SOCKET ClientSocket;
+
+
 
 private:
 	int WinsockInit(PCSTR ip, PCSTR port);

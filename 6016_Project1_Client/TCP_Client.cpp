@@ -1,4 +1,5 @@
 #include "TCP_Client.h"
+#include <iostream>
 
 TCP_Client::TCP_Client()
 {
@@ -46,6 +47,50 @@ void TCP_Client::CloseSocket()
 {
 	CloseConnection();
 	ShutdownWinsock();
+}
+
+int TCP_Client::SendToServer(uint16_t cmd, uint16_t opcode, std::string s)
+{
+	int result = 0;
+	//Buffer buffer(8);
+	ProtocolChat frame;
+
+	frame.cmd = cmd; //send to server
+	frame.opcode = opcode; //room
+	frame.content = s;
+
+	Buffer buffer(frame.frameSize());
+	buffer.WriteInt32BE(frame.frameSize());
+	buffer.WriteShort16BE(frame.cmd);
+	buffer.WriteShort16BE(frame.opcode);
+	buffer.WriteInt32BE(frame.contentSize());
+	buffer.WriteString(frame.content);
+
+	result = send(ConnectSocket, (const char*)&(buffer.m_buffer[0]), frame.frameSize(), 0);
+	return result;
+}
+
+int TCP_Client::ReceiveFromServer()
+{
+	int result = 0;
+	ProtocolChat frame;
+	const int rcvBuffLen = 512;
+	char rcvBuff[rcvBuffLen];
+	Buffer buff(512);
+
+	//receive 
+	int recvResult = recv(ConnectSocket, rcvBuff, rcvBuffLen, 0);
+	//transfer to buffer
+	buff.m_buffer.insert(buff.m_buffer.begin(), rcvBuff, rcvBuff + rcvBuffLen);
+	uint32_t buffLen = buff.ReadInt32BE(0);
+	buff.m_buffer.resize(buffLen + 1);
+	uint16_t cmd = buff.ReadShort16BE(4);
+	uint16_t opcode = buff.ReadShort16BE(6);
+	uint32_t contentLen = buff.ReadInt32BE(8);
+	std::string s = buff.ReadString(12, contentLen);
+
+	std::cout << s;
+	return result;
 }
 
 int TCP_Client::WinsockInit(PCSTR ip, PCSTR port)
@@ -113,7 +158,7 @@ int TCP_Client::MakeConnect()
 	result = connect(ConnectSocket, info->ai_addr, (int)info->ai_addrlen);
 	if (result == SOCKET_ERROR)
 	{
-		printf("- error connecting %#x\n", WSAGetLastError());
+		printf("- error connecting %d\n", WSAGetLastError());
 		freeaddrinfo(info);
 		closesocket(ConnectSocket);
 		WSACleanup();

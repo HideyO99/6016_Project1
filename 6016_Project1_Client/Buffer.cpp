@@ -161,15 +161,13 @@ std::string Buffer::ReadString()
 	return s;
 }
 
-std::string Buffer::ReadString(std::size_t index)
+std::string Buffer::ReadString(std::size_t index, uint32_t len)
 {
 	std::string s;
-	int i = 0;
 
-	while (m_buffer[index + i] != '\0')
+	for (size_t i = 0; i < len; i++)
 	{
 		s.push_back(m_buffer[index + i]);
-		i++;
 	}
 
 	return s;

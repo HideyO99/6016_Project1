@@ -30,7 +30,7 @@ public:
 	int16_t ReadShort16BE();
 	int16_t ReadShort16BE(std::size_t index);
 	std::string ReadString();
-	std::string ReadString(std::size_t index);
+	std::string ReadString(std::size_t index, uint32_t len);
 
 
 

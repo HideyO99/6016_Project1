@@ -22,7 +22,7 @@ public:
 
 	int Initialize(PCSTR port);
 	int ReadFromClient();
-	int SendToClient(std::string s, uint16_t opcode);
+	int SendToClient(uint16_t opcode, std::string s);
 	void CloseSocket();
 
 	WSADATA wsaData;
