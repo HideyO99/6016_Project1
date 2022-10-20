@@ -97,9 +97,7 @@ int TCP_Server::WinsockInit(PCSTR port)
 {
 	int result = 0;
 
-#if DEBUG_print
-	printf("Initialize WSA\t");
-#endif
+
 
 	result = WSAStartup(MAKEWORD(2, 2), &wsaData);
 	if (result != 0)
@@ -107,21 +105,14 @@ int TCP_Server::WinsockInit(PCSTR port)
 		printf("- error WSAStartup %#x\n", result);
 		return 1;
 	}
-#if DEBUG_print
-	else
-	{
-		printf("- success\n");
-	}
-#endif
+
 
 	hints.ai_family = AF_INET;
 	hints.ai_socktype = SOCK_STREAM;
 	hints.ai_protocol = IPPROTO_TCP;
 	hints.ai_flags = AI_PASSIVE;
 
-#if DEBUG_print
-	printf("Getaddrinfo\t");
-#endif
+
 
 	result = getaddrinfo(NULL, port, &hints, &info);
 	if (result != 0)
@@ -130,12 +121,7 @@ int TCP_Server::WinsockInit(PCSTR port)
 		WSACleanup();
 		return 1;
 	}
-#if DEBUG_print
-	else
-	{
-		printf("- success\n");
-	}
-#endif
+
 	return result;
 }
 
@@ -143,9 +129,7 @@ int TCP_Server::SocketCreate()
 {
 	int result = 0;
 
-#if DEBUG_print
-	printf("Create Socket\t");
-#endif
+
 	ListenSocket = socket(info->ai_family, info->ai_socktype, info->ai_protocol);
 	if (ListenSocket == INVALID_SOCKET)
 	{
@@ -154,21 +138,14 @@ int TCP_Server::SocketCreate()
 		WSACleanup();
 		return 1;
 	}
-#if DEBUG_print
-	else
-	{
-		printf("- success\n");
-	}
-#endif
+
 	return result;
 }
 
 int TCP_Server::BindSocket()
 {
 	int result = 0;
-#if DEBUG_print
-	printf("Binding\t");
-#endif
+
 	result = bind(ListenSocket, info->ai_addr, (int)info->ai_addrlen);
 	if (result == SOCKET_ERROR)
 	{
@@ -178,21 +155,14 @@ int TCP_Server::BindSocket()
 		WSACleanup();
 		return 1;
 	}
-#if DEBUG_print
-	else
-	{
-		printf("- success\n");
-	}
-#endif
+
 	return result;
 }
 
 int TCP_Server::ListenConnection()
 {
 	int result = 0;
-#if DEBUG_print
-	printf("listening\t");
-#endif
+
 	result = listen(ListenSocket, SOMAXCONN);
 	if (result == SOCKET_ERROR)
 	{
@@ -202,21 +172,14 @@ int TCP_Server::ListenConnection()
 		WSACleanup();
 		return 1;
 	}
-#if DEBUG_print
-	else
-	{
-		printf("- success\n");
-	}
-#endif
+
 	return result;
 }
 
 int TCP_Server::AcceptConnection()
 {
 	int result = 0;
-#if DEBUG_print
-	printf("Accept\t");
-#endif
+
 	ClientSocket = accept(ListenSocket, NULL, NULL);
 	if (ClientSocket == INVALID_SOCKET)
 	{
@@ -226,12 +189,7 @@ int TCP_Server::AcceptConnection()
 		WSACleanup();
 		return 1;
 	}
-#if DEBUG_print
-	else
-	{
-		printf("- success\n");
-	}
-#endif
+
 	return result;
 }
 
@@ -259,18 +217,46 @@ int TCP_Server::ReadFromClient()
 		switch (cmd)
 		{
 		case 0:
-			SendToClient(0,"Hello " + s);
+			SendToClient(3, 0,"Hello " + s);
 			break;
 		case 1:
 			JoinRoom(opcode, s);
-			SendToClient(BoardCast, s.append("has joined the room "));
+			switch (opcode)
+			{
+			case 1:
+				s.append(" has joined the Network room");
+				break;
+			case 2:
+				s.append(" has joined the Physic room");
+				break;
+			case 3:
+				s.append(" has joined the Deploy room");
+				break;
+			default:
+				break;
+			}
+			SendToClient(5, BroadCast, s);
 			break;
 		case 2:
 			LeaveRoom(opcode, s);
-			SendToClient(BoardCast, s.append( "has left the room "));
+			switch (opcode)
+			{
+			case 1:
+				s.append(" has left the Network room");
+				break;
+			case 2:
+				s.append(" has left the Physic room");
+				break;
+			case 3:
+				s.append(" has left the Deploy room");
+				break;
+			default:
+				break;
+			}
+			SendToClient(6, BroadCast, s);
 			break;
 		case 4:
-			SendToClient(opcode, s);
+			SendToClient(3, opcode, s);
 			break;
 		default:
 			break;
@@ -279,14 +265,14 @@ int TCP_Server::ReadFromClient()
 	return result;
 }
 
-int TCP_Server::SendToClient(uint16_t opcode, std::string s)
+int TCP_Server::SendToClient(uint16_t cmd, uint16_t opcode, std::string s)
 {
 	int result = 0;
 	//Buffer buffer(8);
 	int packetLen = 0;
 	ProtocolChat frame;
 
-	frame.cmd = 0x3; // send to client
+	frame.cmd = cmd; // send to client
 	frame.opcode = opcode; //room
 	frame.content = s;
 	Buffer buffer(frame.frameSize());
@@ -297,32 +283,28 @@ int TCP_Server::SendToClient(uint16_t opcode, std::string s)
 	buffer.WriteString(frame.content);
 
 	result = send(ClientSocket, (const char*)&(buffer.m_buffer[0]), frame.frameSize(), 0);
-	if (opcode == BoardCast) //boardcast send message to every room
-	{
-		frame.opcode = Network;
-		buffer.WriteShort16BE(frame.opcode);
-		result = send(ClientSocket, (const char*)&(buffer.m_buffer[0]), frame.frameSize(), 0);
-		frame.opcode = Physic;
-		buffer.WriteShort16BE(frame.opcode);
-		result = send(ClientSocket, (const char*)&(buffer.m_buffer[0]), frame.frameSize(), 0);
-		frame.opcode = Deploy;
-		buffer.WriteShort16BE(frame.opcode);
-		result = send(ClientSocket, (const char*)&(buffer.m_buffer[0]), frame.frameSize(), 0);
-	}
+	//if (opcode == BroadCast) //boardcast send message to every room
+	//{
+	//	frame.opcode = Network;
+	//	buffer.WriteShort16BE(6, frame.opcode);
+	//	result = send(ClientSocket, (const char*)&(buffer.m_buffer[0]), frame.frameSize(), 0);
+	//	frame.opcode = Physic;
+	//	buffer.WriteShort16BE(6, frame.opcode);
+	//	result = send(ClientSocket, (const char*)&(buffer.m_buffer[0]), frame.frameSize(), 0);
+	//	frame.opcode = Deploy;
+	//	buffer.WriteShort16BE(6, frame.opcode);
+	//	result = send(ClientSocket, (const char*)&(buffer.m_buffer[0]), frame.frameSize(), 0);
+	//}
 
 	return result;
 }
 
 void TCP_Server::CloseSocket()
 {
-#if DEBUG_print
-	printf("closing socket\n");
-#endif
+
 	freeaddrinfo(info);
 	closesocket(ListenSocket);
 	closesocket(ClientSocket);
-#if DEBUG_print
-	printf("shutdown winsock\n");
-#endif
+
 	WSACleanup();
 }

@@ -21,18 +21,10 @@ int main(int argc, char** argv)
 		return result;
 	}
 
-	result = Client.SendToServer(0, 0xff, name); // send name to server
+	result = Client.SendToServer(SetName, 0xff, name); // send name to server
 	result = Client.ReceiveFromServer(); //acknowledge from server
 
-
-
-	
-
-	//write
-
-
-	//read
-
+	result = Client.Chat(name);
 
 
 	//shutdown winsock

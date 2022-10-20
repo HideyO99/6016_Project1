@@ -7,9 +7,17 @@
 #include <stdio.h>
 #include "Buffer.h"
 #include "ProtocolChat.h"
+#include "RoomStatus.h"
 
 #pragma comment(lib, "Ws2_32.lib")
 
+enum ClientCMD
+{
+	SetName = 0,
+	JoinRoom,
+	LeaveRoom,
+	SendMSG = 4
+};
 
 class TCP_Client
 {
@@ -21,6 +29,7 @@ public:
 	void CloseSocket();
 	int SendToServer(uint16_t cmd, uint16_t opcode, std::string s);
 	int ReceiveFromServer();
+	int Chat(std::string user);
 
 	WSADATA wsaData;
 	struct addrinfo* info;

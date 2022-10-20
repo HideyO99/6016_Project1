@@ -8,7 +8,7 @@ enum roomID
 	Network = 1,
 	Physic,
 	Deploy,
-	BoardCast = 0xff
+	BroadCast = 0xff
 
 };
 

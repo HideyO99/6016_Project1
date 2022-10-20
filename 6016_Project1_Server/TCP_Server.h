@@ -11,7 +11,7 @@
 
 #pragma comment(lib, "Ws2_32.lib")
 #define PORT "1112"
-#define DEBUG_print true
+
 
 
 class TCP_Server
@@ -22,7 +22,7 @@ public:
 
 	int Initialize(PCSTR port);
 	int ReadFromClient();
-	int SendToClient(uint16_t opcode, std::string s);
+	int SendToClient(uint16_t cmd, uint16_t opcode, std::string s);
 	void CloseSocket();
 
 	WSADATA wsaData;

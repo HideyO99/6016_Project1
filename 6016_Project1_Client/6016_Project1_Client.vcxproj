@@ -130,11 +130,13 @@
     <ClCompile Include="Buffer.cpp" />
     <ClCompile Include="Client_main.cpp" />
     <ClCompile Include="ProtocolChat.cpp" />
+    <ClCompile Include="RoomStatus.cpp" />
     <ClCompile Include="TCP_Client.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Buffer.h" />
     <ClInclude Include="ProtocolChat.h" />
+    <ClInclude Include="RoomStatus.h" />
     <ClInclude Include="TCP_Client.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -1,5 +1,10 @@
 #include "TCP_Client.h"
 #include <iostream>
+#include <map>
+
+std::map<std::string, int> room{ {"Network",1},{"Physic",2},{"Deploy",3} };
+RoomStatus curRoom;
+uint16_t roomFlag = 0;
 
 TCP_Client::TCP_Client()
 {
@@ -89,7 +94,145 @@ int TCP_Client::ReceiveFromServer()
 	uint32_t contentLen = buff.ReadInt32BE(8);
 	std::string s = buff.ReadString(12, contentLen);
 
-	std::cout << s;
+	switch (cmd)
+	{
+	case 5: // join acknowledge
+		curRoom.setActiveRoom(roomFlag, true);
+		break;
+	case 6: // leave acknowledge
+		curRoom.setActiveRoom(roomFlag, false);
+		break;
+	case 3: // msg 
+		switch (opcode)
+		{
+		case 1:
+			std::cout << "[Network] ";
+			break;
+		case 2:
+			std::cout << "[Physic] ";
+			break;
+		case 3:
+			std::cout << "[Deploy] ";
+			break;
+		default:
+			break;
+		}
+		break;
+	case 0xff:
+		break;
+	default:
+		break;
+	}
+
+	std::cout << s << std::endl;
+	return result;
+}
+
+int TCP_Client::Chat(std::string user)
+{
+	int result = 0;
+	bool terminate = false;
+	std::string input;
+	std::string cmd;
+	
+	//uint16_t opcode = 0xff;
+	//std::string para;
+	
+	std::cout << "Type /J [room] to join a room" << std::endl;
+	std::cout << "Type /L [room] to Leave a room" << std::endl;
+	std::cout << "Type /S [message] to send message to a room" << std::endl;
+	std::cout << "Type /X  to exit program" << std::endl;
+	std::cout << "Room Available" << std::endl;
+	for (auto it = room.begin();
+		it != room.end(); it++)
+	{
+		std::cout <<"< " << it->first << "  >\t";
+	}
+	std::cout << std::endl;
+	std::getline(std::cin, input);
+	uint16_t opcode = 0xff;
+	int i = 0;
+	while (!terminate)
+	{
+		std::cout << i++ << " ";
+		std::cout << user << "> ";
+		std::getline(std::cin, input);
+		size_t delimiterPos = input.find(' ');
+		if (delimiterPos != std::string::npos)
+		{
+			cmd = input.substr(0, delimiterPos);
+			input.erase(0, delimiterPos + 1);
+			while (input.front() == ' ')
+			{
+				delimiterPos = input.find(' ');
+				input.erase(0, delimiterPos + 1);
+			}
+			//join room
+			if ((cmd.compare("/J") == 0) || (cmd.compare("/j") == 0))
+			{
+				auto found = room.find(input);
+				if (found != room.end())
+				{
+					opcode = (uint16_t)(found->second);
+					result = SendToServer(JoinRoom, opcode, user);
+					roomFlag = opcode;
+				}
+				else
+				{
+					std::cout << "incorrect room" << std::endl;
+				}
+			}
+			//leave room
+			if ((cmd.compare("/L") == 0) || (cmd.compare("/l") == 0))
+			{
+				auto found = room.find(input);
+				if (found != room.end())
+				{
+					opcode = (uint16_t)(found->second);
+					if (curRoom.getActiveRoom(opcode))
+					{
+						result = SendToServer(LeaveRoom, opcode, user);
+						roomFlag = opcode;
+					}
+					else {
+						std::cout << "you are not in the room" << std::endl;
+					}
+				}
+				else
+				{
+					std::cout << "incorrect room" << std::endl;
+				}
+			}
+			//send message
+			if ((cmd.compare("/S") == 0) || (cmd.compare("/s") == 0))
+			{
+				std::string toRoom;
+				delimiterPos = input.find(' ');
+				toRoom = (input.substr(0, delimiterPos));
+				input.erase(0, delimiterPos + 1);
+				auto found = room.find(toRoom);
+				if (found != room.end())
+				{
+					opcode = (uint16_t)(found->second);
+					result = SendToServer(SendMSG, opcode, input);
+				}
+				else
+				{
+					std::cout << "incorrect room" << std::endl;
+				}
+				
+			}
+			result = ReceiveFromServer();
+			//system("Pause");
+		}
+		if ((input.compare("/X") == 0) || (input.compare("/x") == 0))
+		{
+			terminate = true;
+			break;
+		}
+	}
+	
+
 	return result;
 }
 
@@ -97,23 +240,18 @@ int TCP_Client::WinsockInit(PCSTR ip, PCSTR port)
 {
 	int result = 0;
 
-	printf("Initialize WSA\t");
 	result = WSAStartup(MAKEWORD(2, 2), &wsaData);
 	if (result != 0)
 	{
 		printf("- error WSAStartup %#x\n", result);
 		return 1;
 	}
-	else
-	{
-		printf("- success\n");
-	}
+
 
 	hints.ai_family = AF_INET;
 	hints.ai_socktype = SOCK_STREAM;
 	hints.ai_protocol = IPPROTO_TCP;
 
-	printf("Getaddrinfo\t");
 	result = getaddrinfo(ip, port, &hints, &info);
 	if (result != 0)
 	{
@@ -121,10 +259,7 @@ int TCP_Client::WinsockInit(PCSTR ip, PCSTR port)
 		WSACleanup();
 		return 1;
 	}
-	else
-	{
-		printf("- success\n");
-	}
+
 
 	return result;
 }
@@ -133,7 +268,6 @@ int TCP_Client::SocketCreate()
 {
 	int result = 0;
 
-	printf("create socket\t");
 	ConnectSocket = socket(info->ai_family, info->ai_socktype, info->ai_protocol);
 	if (ConnectSocket == INVALID_SOCKET)
 	{
@@ -141,10 +275,6 @@ int TCP_Client::SocketCreate()
 		freeaddrinfo(info);
 		WSACleanup();
 		return 1;
-	}
-	else
-	{
-		printf("- success\n");
 	}
 
 	return result;
@@ -154,7 +284,6 @@ int TCP_Client::MakeConnect()
 {
 	int result = 0;
 
-	printf("connecting\t");
 	result = connect(ConnectSocket, info->ai_addr, (int)info->ai_addrlen);
 	if (result == SOCKET_ERROR)
 	{
@@ -164,10 +293,7 @@ int TCP_Client::MakeConnect()
 		WSACleanup();
 		return 1;
 	}
-	else
-	{
-		printf("- success\n");
-	}
+
 
 	return result;
 }
@@ -176,7 +302,7 @@ int TCP_Client::CloseConnection()
 {
 	int result = 0;
 
-	printf("shutdown\t");
+	
 	result = shutdown(ConnectSocket, SD_SEND);
 	if (result == SOCKET_ERROR)
 	{
@@ -186,17 +312,12 @@ int TCP_Client::CloseConnection()
 		WSACleanup();
 		return 1;
 	}
-	else
-	{
-		printf("- success\n");
-	}
 
 	return result;
 }
 
 void TCP_Client::ShutdownWinsock()
 {
-	printf("closing\t");
 	closesocket(ConnectSocket);
 	WSACleanup();
 }

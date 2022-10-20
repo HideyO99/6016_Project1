@@ -27,12 +27,6 @@ int main(int argc, char** argv)
 	}
 
 
-	//write
-	//result = Server.SendToClient();
-	//if (result != 0)
-	//{
-	//	return result;
-	//}
 
 	//close socket
 	Server.CloseSocket();
